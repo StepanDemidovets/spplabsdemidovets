@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Lab3 Tasks (Improved UI)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Tasks (Lab3)</h1>
+    <div id="user-area"></div>
+  </header>
+
+  <section id="controls">
+    <label>Filter:
+      <select id="filter">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="done">Done</option>
+      </select>
+    </label>
+    <button id="refresh">Refresh</button>
+    <button id="logout" style="display:none">Logout</button>
+    <button id="show-register">Register</button>
+  </section>
+
+  <section id="create">
+    <h2>Create task</h2>
+    <form id="create-form">
+      <input name="title" placeholder="Title" required />
+      <select name="status">
+        <option value="pending">Pending</option>
+        <option value="done">Done</option>
+      </select>
+      <input type="date" name="dueDate" />
+      <input type="file" name="file" />
+      <button>Create</button>
+    </form>
+  </section>
+
+  <section id="tasks">
+    <h2>Tasks</h2>
+    <ul id="tasks-list"></ul>
+  </section>
+
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal" style="display:none">
+    <form id="login-form" class="modal-content">
+      <span class="close-btn" onclick="document.getElementById('login-modal').style.display='none'">&times;</span>
+      <h3>Login</h3>
+      <input name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button>Login</button>
+    </form>
+  </div>
+
+  <!-- Register Modal -->
+  <div id="register-modal" class="modal" style="display:none">
+    <form id="register-form" class="modal-content">
+      <span class="close-btn" onclick="document.getElementById('register-modal').style.display='none'">&times;</span>
+      <h3>Register</h3>
+      <input name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button>Register</button>
+    </form>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

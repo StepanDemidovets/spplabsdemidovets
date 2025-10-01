@@ -1,0 +1,178 @@
+/* Общие стили */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 20px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    color: #333;
+}
+
+/* Заголовки */
+h1, h2, h3 {
+    margin: 0 0 10px 0;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Кнопки */
+button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    margin: 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+/* Формы */
+form input, form select {
+    padding: 6px 10px;
+    margin: 4px 0;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+}
+
+form label {
+    font-weight: bold;
+}
+
+/* Task list */
+#tasks-list {
+    list-style: none;
+    padding: 0;
+}
+
+.task {
+    background: white;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.task .info {
+    flex-grow: 1;
+}
+
+.task .info strong {
+    font-size: 1.1rem;
+}
+
+.task .info em {
+    margin-left: 8px;
+    font-style: normal;
+    font-weight: bold;
+}
+
+.task.pending {
+    border-left: 5px solid orange;
+}
+
+.task.done {
+    border-left: 5px solid green;
+}
+
+.task .attachments a {
+    margin-right: 6px;
+    font-size: 0.85rem;
+    color: #555;
+    text-decoration: underline;
+}
+
+.task button {
+    margin-left: 5px;
+    margin-top: 5px;
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px 25px;
+    border-radius: 8px;
+    width: 300px;
+    max-width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+}
+
+.modal-content h3 {
+    text-align: center;
+}
+
+.close-btn {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #888;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+/* Filter and controls */
+#controls {
+    margin-bottom: 20px;
+}
+
+#controls label, #controls button {
+    margin-right: 10px;
+}
+
+/* Create task section */
+#create input, #create select {
+    width: 100%;
+    margin-bottom: 6px;
+}
+
+/* Responsive */
+@media(max-width: 600px){
+    .task {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .task button {
+        margin-left: 0;
+    }
+}
