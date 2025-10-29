@@ -1,0 +1,199 @@
+(async function(){
+  const socket = io();
+
+  const qs = s => document.querySelector(s);
+  const tasksList = qs('#tasks-list');
+  const filter = qs('#filter');
+  const refreshBtn = qs('#refresh');
+  const createForm = qs('#create-form');
+  const loginModal = qs('#login-modal');
+  const loginForm = qs('#login-form');
+  const registerModal = qs('#register-modal');
+  const registerForm = qs('#register-form');
+  const userArea = qs('#user-area');
+  const logoutBtn = qs('#logout');
+  const showRegisterBtn = qs('#show-register');
+
+  function showLogin(){ loginModal.style.display = 'flex'; }
+  function hideLogin(){ loginModal.style.display = 'none'; }
+  function showRegister(){ registerModal.style.display = 'flex'; }
+  function hideRegister(){ registerModal.style.display = 'none'; }
+
+  function setCookie(name, value, days=1){
+    const d = new Date();
+    d.setTime(d.getTime() + days*24*60*60*1000);
+    document.cookie = name + '=' + value + '; path=/; expires=' + d.toUTCString();
+  }
+
+  async function checkAuth(){
+    socket.emit('me', null, (res) => {
+      if (!res || res.status === 401) {
+        userArea.innerText = 'Not logged';
+        logoutBtn.style.display = 'none';
+        showRegisterBtn.style.display = 'inline-block';
+      } else {
+        userArea.innerText = res.email;
+        logoutBtn.style.display = 'inline-block';
+        showRegisterBtn.style.display = 'none';
+      }
+    });
+  }
+
+  function renderTasks(items){
+    const f = filter.value;
+    const filtered = items.filter(it => f === 'all' ? true : it.status === f);
+    tasksList.innerHTML = '';
+    if (!filtered.length) tasksList.innerHTML = '<li>No tasks</li>';
+    filtered.forEach(it => {
+      const li = document.createElement('li');
+      li.className = 'task';
+      li.innerHTML = `
+        <div class="info">
+          <strong>${escapeHtml(it.title)}</strong> <em>(${it.status})</em>
+          <div>Due: ${it.dueDate || '-'}</div>
+          <div class="attachments">${it.attachments && it.attachments.length ? 'Attachments: ' + it.attachments.map(a => '<a href="/api/tasks/'+it.id+'/files/'+a.filename+'">'+escapeHtml(a.originalname)+'</a>').join(', ') : ''}</div>
+        </div>
+        <div>
+          <button data-id="${it.id}" class="toggle">${it.status === 'done' ? 'Mark pending' : 'Mark done'}</button>
+          <button data-id="${it.id}" class="del">Delete</button>
+        </div>
+      `;
+      tasksList.appendChild(li);
+    });
+  }
+
+  function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+
+  // Listen server broadcasts
+  socket.on('tasks:changed', (items) => {
+    renderTasks(items);
+  });
+
+  // Events
+  refreshBtn.addEventListener('click', () => {
+    socket.emit('tasks:list', null, (res) => {
+      if (!res || res.status === 401) { showLogin(); return; }
+      renderTasks(res);
+    });
+  });
+
+  filter.addEventListener('change', () => {
+    socket.emit('tasks:list', null, (res) => {
+      if (!res || res.status === 401) { showLogin(); return; }
+      renderTasks(res);
+    });
+  });
+
+  createForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const fd = new FormData(form);
+    const title = fd.get('title');
+    const status = fd.get('status');
+    const dueDate = fd.get('dueDate') || null;
+    const fileInput = form.querySelector('input[type=file]');
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    let fileObj = null;
+    if (file) {
+      fileObj = await readFileAsBase64(file);
+      fileObj.originalname = file.name;
+    }
+    socket.emit('tasks:create', { title, status, dueDate, file: fileObj }, (res) => {
+      if (!res || res.status === 401) { showLogin(); return; }
+      // success
+      form.reset();
+      socket.emit('tasks:list', null, (items) => { if (items && !items.status) renderTasks(items); });
+    });
+  });
+
+  tasksList.addEventListener('click', (e) => {
+    const id = Number(e.target.dataset.id);
+    if (!id) return;
+    if (e.target.classList.contains('toggle')) {
+      // get tasks, find item, toggle
+      socket.emit('tasks:list', null, (items) => {
+        if (!items || items.status === 401) { showLogin(); return; }
+        const it = items.find(x => x.id == id);
+        if (!it) return;
+        const newStatus = it.status === 'done' ? 'pending' : 'done';
+        socket.emit('tasks:update', { id, status: newStatus }, (res) => {
+          if (!res || res.status === 401) { showLogin(); return; }
+          socket.emit('tasks:list', null, (items2) => { if (items2 && !items2.status) renderTasks(items2); });
+        });
+      });
+    } else if (e.target.classList.contains('del')) {
+      if (!confirm('Delete?')) return;
+      socket.emit('tasks:delete', { id }, (res) => {
+        if (!res || res.status === 401) { showLogin(); return; }
+        socket.emit('tasks:list', null, (items) => { if (items && !items.status) renderTasks(items); });
+      });
+    }
+  });
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(loginForm);
+    const body = { email: fd.get('email'), password: fd.get('password') };
+    socket.emit('login', body, (res) => {
+      if (res && res.token) {
+        setCookie('token', res.token);
+        hideLogin();
+        socket.io.engine.transport.query = socket.io.engine.transport.query || {};
+        // after login we can reconnect to ensure handshake has cookie, but not required:
+        // socket.disconnect(); socket.connect();
+        checkAuth();
+        socket.emit('tasks:list', null, (items) => { if (items && !items.status) renderTasks(items); });
+      } else {
+        alert('Login failed');
+      }
+    });
+  });
+
+  registerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(registerForm);
+    const body = { email: fd.get('email'), password: fd.get('password') };
+    socket.emit('register', body, (res) => {
+      if (res && res.token) {
+        setCookie('token', res.token);
+        hideRegister();
+        checkAuth();
+        socket.emit('tasks:list', null, (items) => { if (items && !items.status) renderTasks(items); });
+      } else {
+        alert('Registration failed');
+      }
+    });
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    socket.emit('logout', null, () => {
+      // clear cookie
+      document.cookie = 'token=; Max-Age=0; path=/;';
+      userArea.innerText = 'Not logged';
+      logoutBtn.style.display = 'none';
+      checkAuth();
+      socket.emit('tasks:list', null, (items) => { if (items && !items.status) renderTasks(items); });
+    });
+  });
+
+  showRegisterBtn.addEventListener('click', showRegister);
+
+  function readFileAsBase64(file){
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        // fr.result = data:<mime>;base64,<data>
+        const s = fr.result;
+        const parts = s.split(',');
+        resolve({ data: parts[1] });
+      };
+      fr.onerror = reject;
+      fr.readAsDataURL(file);
+    });
+  }
+
+  // initial load
+  checkAuth();
+  socket.emit('tasks:list', null, (items) => { if (items && !items.status) renderTasks(items); });
+
+})();
